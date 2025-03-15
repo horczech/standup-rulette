@@ -199,9 +199,9 @@ const SpinningWheel = ({ members, teamName }: SpinningWheelProps) => {
       {/* Wheel SVG */}
       <div className="relative mb-8">
         {/* Triangle pointer */}
-        <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 z-10">
+        <div className="absolute left-1/2 top-9 transform -translate-x-1/2 z-10">
           <svg width="30" height="30" viewBox="0 0 30 30">
-            <polygon points="15,0 30,30 0,30" fill="#E43D12" />
+            <polygon points="15,30 30,0 0,0" fill="#E43D12" />
           </svg>
         </div>
         
