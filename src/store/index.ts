@@ -1,6 +1,6 @@
 import { configureStore } from '@reduxjs/toolkit';
 import teamReducer, { loadTeamsFromStorage } from './teamSlice';
-import { loadTeamData, saveTeamData } from '../services/firebase';
+import { loadTeamData, saveTeamData, unsubscribeFromTeamData } from '../services/firebase';
 
 // Create the Redux store
 const store = configureStore({
@@ -21,9 +21,26 @@ loadTeamData((teamData) => {
 });
 
 // Subscribe to store changes to save to Firebase
+let saveTimeout: NodeJS.Timeout;
+
 store.subscribe(() => {
   const state = store.getState();
-  saveTeamData(state.team);
+  
+  // Debounce the save operation to avoid excessive writes
+  if (saveTimeout) {
+    clearTimeout(saveTimeout);
+  }
+  
+  saveTimeout = setTimeout(() => {
+    saveTeamData(state.team);
+  }, 1000);
+});
+
+// Clean up Firebase subscription when store is destroyed
+store.subscribe(() => {
+  if (store.getState().team.teams) {
+    unsubscribeFromTeamData();
+  }
 });
 
 // Export the store

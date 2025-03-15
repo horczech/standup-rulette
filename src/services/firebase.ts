@@ -3,7 +3,6 @@ import { getDatabase, ref, set, onValue, off } from 'firebase/database';
 import { TeamState } from '../store/teamSlice';
 
 // Firebase configuration
-// In a real application, these would come from environment variables
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "your-api-key",
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "your-auth-domain",
@@ -24,8 +23,13 @@ const teamsRef = ref(database, 'teams');
 // Save team data to Firebase
 export const saveTeamData = (teamState: TeamState) => {
   try {
-    set(teamsRef, teamState.teams);
-    console.log('Team data saved to Firebase successfully');
+    set(teamsRef, teamState.teams)
+      .then(() => {
+        console.log('Team data saved to Firebase successfully');
+      })
+      .catch((error) => {
+        console.error('Error saving team data to Firebase:', error);
+      });
   } catch (error) {
     console.error('Error saving team data to Firebase:', error);
   }
@@ -36,6 +40,8 @@ export const loadTeamData = (callback: (data: any) => void) => {
   onValue(teamsRef, (snapshot) => {
     const data = snapshot.val();
     callback(data || {});
+  }, (error) => {
+    console.error('Error loading team data from Firebase:', error);
   });
 };
 
