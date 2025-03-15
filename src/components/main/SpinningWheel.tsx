@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useState } from 'react';
 import { gsap } from 'gsap';
 import confetti from 'canvas-confetti';
 import useAppDispatch from '../../hooks/useAppDispatch';
@@ -15,96 +15,99 @@ const SpinningWheel = ({ members, teamName }: SpinningWheelProps) => {
   const [isSpinning, setIsSpinning] = useState(false);
   const dispatch = useAppDispatch();
   
-  // Create an array of members for the wheel
   const memberArray = Object.keys(members);
   
-  useEffect(() => {
-    // Reset winner when members change
-    setWinner(null);
-  }, [members]);
-  
+  const calculateTextPosition = (index: number) => {
+    const segmentAngle = 360 / memberArray.length;
+    const middleAngle = index * segmentAngle + segmentAngle / 2;
+    const radius = 150;
+    const centerX = 200;
+    const centerY = 200;
+    
+    const textRad = (middleAngle * Math.PI) / 180;
+    return {
+      x: centerX + (radius * 0.7) * Math.cos(textRad),
+      y: centerY + (radius * 0.7) * Math.sin(textRad)
+    };
+  };
+
   const spinWheel = () => {
     if (isSpinning || memberArray.length < 2) return;
     
     setIsSpinning(true);
     setWinner(null);
     
-    // Random number of rotations between 2 and 5
-    const rotations = 2 + Math.random() * 3;
-    
-    // Random winner
+    // Randomly select winner first
     const winnerIndex = Math.floor(Math.random() * memberArray.length);
     const winnerName = memberArray[winnerIndex];
     
-    // Calculate the angle to land on the winner
-    const segmentAngle = 360 / memberArray.length;
-    const winnerAngle = segmentAngle * winnerIndex;
+    // Calculate required rotation to bring winner to top
+    const currentRotation = gsap.getProperty(wheelRef.current, "rotation") || 0;
+    const { x, y } = calculateTextPosition(winnerIndex);
     
-    // Total rotation amount (full rotations + winner position)
-    const endAngle = rotations * 360 + (360 - winnerAngle);
+    // Calculate angle needed to bring this point to top (12 o'clock)
+    const centerX = 200;
+    const centerY = 200;
+    const deltaX = x - centerX;
+    const deltaY = y - centerY;
+    const targetAngle = Math.atan2(deltaY, deltaX) * 180 / Math.PI + 90;
     
-    // Animate wheel rotation
+    // Calculate required rotation (3 full spins + adjustment)
+    const fullSpins = 3;
+    const baseRotation = fullSpins * 360;
+    const totalRotation = baseRotation - targetAngle;
+    
+    // Adjust for current rotation
+    const currentRotationMod = Number(currentRotation) % 360;
+    const finalRotation = totalRotation + (360 - currentRotationMod);
+    
     gsap.to(wheelRef.current, {
-      rotation: `+=${endAngle}`,
+      rotation: `+=${finalRotation}`,
       duration: 4,
       ease: "power2.out",
+      transformOrigin: "center center",
       onComplete: () => {
-        // Update state with winner
         setWinner(winnerName);
+        // Enable spinning again immediately
         setIsSpinning(false);
-        
-        // Highlight the winning segment in red
-        gsap.to(`[data-member="${winnerName}"] path`, {
-          fill: '#E43D12',
-          duration: 0.3
-        });
-        gsap.to(`[data-member="${winnerName}"] text`, {
-          fill: 'white',
-          duration: 0.3
-        });
-        
-        // Reset the color after 5 seconds
-        setTimeout(() => {
-          const originalColor = document.querySelector(`[data-member="${winnerName}"] path`)?.getAttribute('data-original-color');
-          if (originalColor) {
-            gsap.to(`[data-member="${winnerName}"] path`, {
-              fill: originalColor,
-              duration: 0.3
-            });
-            gsap.to(`[data-member="${winnerName}"] text`, {
-              fill: '#E43D12',
-              duration: 0.3
-            });
-          }
-        }, 5000);
-        
-        // Increment moderation count for winner
         dispatch(incrementModerationCount({ teamName, memberName: winnerName }));
         
-        // Celebrate with confetti!
+        // Highlight winner
+        gsap.to(`[data-member="${winnerName}"] path`, {
+          scale: 1.1,
+          fill: '#FFD700',
+          duration: 0.5
+        });
+        
+        // Confetti
         confetti({
           particleCount: 100,
           spread: 70,
           origin: { y: 0.6 }
         });
+
+        // Reset highlight after 5 seconds, but don't affect spin state
+        setTimeout(() => {
+          gsap.to(`[data-member="${winnerName}"] path`, {
+            scale: 1,
+            fill: memberArray.indexOf(winnerName) % 2 === 0 ? '#FFA2B6' : '#EBE9E1',
+            duration: 0.5
+          });
+        }, 5000);
       }
     });
   };
-  
-  // Create wheel segments based on members
+
   const createWheelSegments = () => {
-    if (memberArray.length === 0) return null;
-    
-    const segmentAngle = 360 / memberArray.length;
-    const radius = 150; // Wheel radius
-    const centerX = 200; // SVG center X
-    const centerY = 200; // SVG center Y
+    const radius = 150;
+    const centerX = 200;
+    const centerY = 200;
     
     return memberArray.map((member, index) => {
+      const segmentAngle = 360 / memberArray.length;
       const startAngle = index * segmentAngle;
       const endAngle = (index + 1) * segmentAngle;
       
-      // Calculate points for the segment
       const startRad = (startAngle * Math.PI) / 180;
       const endRad = (endAngle * Math.PI) / 180;
       
@@ -113,30 +116,22 @@ const SpinningWheel = ({ members, teamName }: SpinningWheelProps) => {
       const x2 = centerX + radius * Math.cos(endRad);
       const y2 = centerY + radius * Math.sin(endRad);
       
-      // Create path for segment
       const path = `M ${centerX} ${centerY} L ${x1} ${y1} A ${radius} ${radius} 0 0 1 ${x2} ${y2} Z`;
+      const { x: textX, y: textY } = calculateTextPosition(index);
       
-      // Calculate text position
-      const textAngle = (startAngle + endAngle) / 2;
-      const textRad = (textAngle * Math.PI) / 180;
-      const textX = centerX + (radius * 0.7) * Math.cos(textRad);
-      const textY = centerY + (radius * 0.7) * Math.sin(textRad);
-      
-      // Alternate colors for segments using the app's color palette
       const color = index % 2 === 0 ? '#FFA2B6' : '#EBE9E1';
       
       return (
         <g key={member} data-member={member}>
-          <path d={path} fill={color} stroke="#D6536D" data-original-color={color} />
+          <path d={path} fill={color} stroke="#D6536D" />
           <text
             x={textX}
             y={textY}
             textAnchor="middle"
             dominantBaseline="middle"
             fontSize="14"
-            fontWeight="bold"
             fill="#E43D12"
-            transform={`rotate(${textAngle}, ${textX}, ${textY})`}
+            transform={`rotate(${index * segmentAngle + segmentAngle / 2}, ${textX}, ${textY})`}
           >
             {member.length > 10 ? `${member.substring(0, 8)}...` : member}
           </text>
@@ -144,68 +139,25 @@ const SpinningWheel = ({ members, teamName }: SpinningWheelProps) => {
       );
     });
   };
-  
-  // Create winner display
-  const createWinnerDisplay = () => {
-    if (!winner) return null;
-    
-    return (
-      <div className="absolute inset-0 flex items-center justify-center">
-        <div className="bg-white bg-opacity-90 p-6 rounded-lg shadow-lg text-center border-2 border-[#FFA2B6]">
-          <h3 className="text-xl font-bold text-[#D6536D]">Winner:</h3>
-          <p className="text-2xl text-[#E43D12] font-bold mt-2">{winner}</p>
-        </div>
-      </div>
-    );
-  };
 
-  // Render empty state when no members are present
-  if (memberArray.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full">
-        <div className="text-center p-8 bg-[#FFA2B6] bg-opacity-10 rounded-xl border-2 border-dashed border-[#D6536D]">
-          <div className="text-6xl mb-4">😴</div>
-          <h3 className="text-2xl font-bold text-[#E43D12] mb-2">Seems like everyone is slacking today!</h3>
-          <p className="text-[#D6536D]">Add some team members to the "Working" list to start the rulette.</p>
-        </div>
-      </div>
-    );
-  }
-  
-  // Render wheel when there's only one member
-  if (memberArray.length === 1) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full">
-        <div className="text-center p-8 bg-[#FFA2B6] bg-opacity-10 rounded-xl border-2 border-[#D6536D]">
-          <div className="text-6xl mb-4">👑</div>
-          <h3 className="text-2xl font-bold text-[#E43D12] mb-2">Only one person is working!</h3>
-          <p className="text-[#D6536D] mb-4">{memberArray[0]} wins by default!</p>
-          <button
-            onClick={() => dispatch(incrementModerationCount({ teamName, memberName: memberArray[0] }))}
-            className="px-5 py-2.5 bg-[#EFB11D] hover:bg-[#e0a41b] text-white rounded-lg font-medium transition-colors"
-          >
-            Record Moderation
-          </button>
-        </div>
-      </div>
-    );
-  }
-  
   return (
     <div className="flex flex-col items-center justify-center h-full relative">
-      {/* Winner display */}
-      {createWinnerDisplay()}
+      {winner && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="bg-white bg-opacity-90 p-6 rounded-lg shadow-lg text-center border-2 border-[#FFA2B6]">
+            <h3 className="text-xl font-bold text-[#D6536D]">Winner:</h3>
+            <p className="text-2xl text-[#E43D12] font-bold mt-2">{winner}</p>
+          </div>
+        </div>
+      )}
       
-      {/* Wheel SVG */}
       <div className="relative mb-8">
-        {/* Triangle pointer */}
-        <div className="absolute left-1/2 top-9 transform -translate-x-1/2 z-10">
+        <div className="absolute top-10 left-1/2 transform -translate-x-1/2 z-10">
           <svg width="30" height="30" viewBox="0 0 30 30">
             <polygon points="15,30 30,0 0,0" fill="#E43D12" />
           </svg>
         </div>
         
-        {/* Wheel */}
         <svg
           ref={wheelRef}
           width="400"
@@ -213,16 +165,13 @@ const SpinningWheel = ({ members, teamName }: SpinningWheelProps) => {
           viewBox="0 0 400 400"
           className="transform"
         >
-          {/* Wheel segments */}
           <g>
             {createWheelSegments()}
-            {/* Center circle */}
             <circle cx="200" cy="200" r="30" fill="#EFB11D" stroke="#E43D12" strokeWidth="2" />
           </g>
         </svg>
       </div>
       
-      {/* Spin button */}
       <button
         onClick={spinWheel}
         disabled={isSpinning || memberArray.length < 2}
