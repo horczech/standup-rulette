@@ -172,38 +172,62 @@ const SpinningWheel = ({ members, teamName }: SpinningWheelProps) => {
         </div>
       )}
       
-      <div className="relative mb-8">
-        <div className="absolute top-10 left-1/2 transform -translate-x-1/2 z-10">
-          <svg width="30" height="30" viewBox="0 0 30 30">
-            <polygon points="15,30 30,0 0,0" fill="#E43D12" />
-          </svg>
+      {memberArray.length === 0 ? (
+        <div className="text-center text-[#E43D12]">
+          <div className="bg-[#FFA2B6] bg-opacity-10 p-8 rounded-lg border-2 border-dashed border-[#E43D12] mb-4">
+            <div className="flex flex-col items-center">
+              <span className="text-4xl mb-4">😢</span>
+              <h2 className="text-2xl font-bold mb-2">No team members in working group</h2>
+              <p className="text-lg">Add team members to start spinning!</p>
+            </div>
+          </div>
         </div>
-        
-        <svg
-          ref={wheelRef}
-          width="400"
-          height="400"
-          viewBox="0 0 400 400"
-          className="transform"
-        >
-          <g>
-            {createWheelSegments()}
-            <circle cx="200" cy="200" r="30" fill="#EFB11D" stroke="#E43D12" strokeWidth="2" />
-          </g>
-        </svg>
-      </div>
-      
-      <button
-        onClick={spinWheel}
-        disabled={isSpinning || memberArray.length < 2}
-        className={`px-6 py-3 rounded-full text-white font-bold text-lg shadow-lg transition-all z-50 ${
-          isSpinning || memberArray.length < 2 
-            ? 'bg-gray-400 cursor-not-allowed' 
-            : 'bg-[#E43D12] hover:bg-[#d13810] hover:shadow-xl'
-        }`}
-      >
-        {isSpinning ? 'Spinning...' : 'Spin the Wheel'}
-      </button>
+      ) : memberArray.length === 1 ? (
+        <div className="text-center text-[#E43D12]">
+          <div className="bg-[#FFA2B6] bg-opacity-10 p-8 rounded-lg border-2 border-dashed border-[#E43D12] mb-4">
+            <div className="flex flex-col items-center">
+              <span className="text-4xl mb-4">😢</span>
+              <h2 className="text-2xl font-bold mb-2">Only one team member is working</h2>
+              <p className="text-lg">Add more team members to spin the wheel!</p>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className="relative mb-8">
+            <div className="absolute top-10 left-1/2 transform -translate-x-1/2 z-10">
+              <svg width="30" height="30" viewBox="0 0 30 30">
+                <polygon points="15,30 30,0 0,0" fill="#E43D12" />
+              </svg>
+            </div>
+            
+            <svg
+              ref={wheelRef}
+              width="400"
+              height="400"
+              viewBox="0 0 400 400"
+              className="transform"
+            >
+              <g>
+                {createWheelSegments()}
+                <circle cx="200" cy="200" r="30" fill="#EFB11D" stroke="#E43D12" strokeWidth="2" />
+              </g>
+            </svg>
+          </div>
+          
+          <button
+            onClick={spinWheel}
+            disabled={isSpinning || memberArray.length < 2}
+            className={`px-6 py-3 rounded-full text-white font-bold text-lg shadow-lg transition-all z-10 ${
+              isSpinning || memberArray.length < 2 
+                ? 'bg-gray-400 cursor-not-allowed' 
+                : 'bg-[#E43D12] hover:bg-[#d13810] hover:shadow-xl'
+            }`}
+          >
+            {isSpinning ? 'Spinning...' : 'Spin the Wheel'}
+          </button>
+        </>
+      )}
     </div>
   );
 };
