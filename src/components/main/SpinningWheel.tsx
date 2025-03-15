@@ -53,6 +53,31 @@ const SpinningWheel = ({ members, teamName }: SpinningWheelProps) => {
         setWinner(winnerName);
         setIsSpinning(false);
         
+        // Highlight the winning segment in red
+        gsap.to(`[data-member="${winnerName}"] path`, {
+          fill: '#E43D12',
+          duration: 0.3
+        });
+        gsap.to(`[data-member="${winnerName}"] text`, {
+          fill: 'white',
+          duration: 0.3
+        });
+        
+        // Reset the color after 5 seconds
+        setTimeout(() => {
+          const originalColor = document.querySelector(`[data-member="${winnerName}"] path`)?.getAttribute('data-original-color');
+          if (originalColor) {
+            gsap.to(`[data-member="${winnerName}"] path`, {
+              fill: originalColor,
+              duration: 0.3
+            });
+            gsap.to(`[data-member="${winnerName}"] text`, {
+              fill: '#E43D12',
+              duration: 0.3
+            });
+          }
+        }, 5000);
+        
         // Increment moderation count for winner
         dispatch(incrementModerationCount({ teamName, memberName: winnerName }));
         
@@ -101,8 +126,8 @@ const SpinningWheel = ({ members, teamName }: SpinningWheelProps) => {
       const color = index % 2 === 0 ? '#FFA2B6' : '#EBE9E1';
       
       return (
-        <g key={member}>
-          <path d={path} fill={color} stroke="#D6536D" />
+        <g key={member} data-member={member}>
+          <path d={path} fill={color} stroke="#D6536D" data-original-color={color} />
           <text
             x={textX}
             y={textY}
