@@ -9,6 +9,21 @@ interface SpinningWheelProps {
   teamName: string;
 }
 
+const DISTINCT_PASTEL_COLORS = [
+  '#FFB3BA', // Soft Pink
+  '#B3FFBA', // Soft Green
+  '#BAF0FF', // Soft Blue
+  '#FFDFBA', // Soft Orange
+  '#D1BFFF', // Soft Purple
+  '#FFFFBA', // Soft Yellow
+  '#FFB3E6', // Soft Magenta
+  '#B3FFDF', // Soft Mint
+  '#BAFFD1', // Soft Cyan
+  '#FFB3D1', // Soft Rose
+  '#BFFFBF', // Soft Lime
+  '#D1B3FF'  // Soft Lavender
+];
+
 const SpinningWheel = ({ members, teamName }: SpinningWheelProps) => {
   const wheelRef = useRef<SVGSVGElement>(null);
   const [winner, setWinner] = useState<string | null>(null);
@@ -76,7 +91,9 @@ const SpinningWheel = ({ members, teamName }: SpinningWheelProps) => {
         gsap.to(`[data-member="${winnerName}"] path`, {
           scale: 1.1,
           fill: '#FFD700',
-          duration: 0.5
+          duration: 0.5,
+          transformOrigin: "center center",
+          zIndex: 1000 // Temporarily elevate z-index
         });
         
         // Confetti
@@ -90,8 +107,10 @@ const SpinningWheel = ({ members, teamName }: SpinningWheelProps) => {
         setTimeout(() => {
           gsap.to(`[data-member="${winnerName}"] path`, {
             scale: 1,
-            fill: memberArray.indexOf(winnerName) % 2 === 0 ? '#FFA2B6' : '#EBE9E1',
-            duration: 0.5
+            fill: DISTINCT_PASTEL_COLORS[memberArray.indexOf(winnerName) % DISTINCT_PASTEL_COLORS.length],
+            duration: 0.5,
+            transformOrigin: "center center",
+            zIndex: 0 // Reset z-index
           });
         }, 5000);
       }
@@ -119,7 +138,9 @@ const SpinningWheel = ({ members, teamName }: SpinningWheelProps) => {
       const path = `M ${centerX} ${centerY} L ${x1} ${y1} A ${radius} ${radius} 0 0 1 ${x2} ${y2} Z`;
       const { x: textX, y: textY } = calculateTextPosition(index);
       
-      const color = index % 2 === 0 ? '#FFA2B6' : '#EBE9E1';
+      // Get a distinct pastel color
+      const colorIndex = index % DISTINCT_PASTEL_COLORS.length;
+      const color = DISTINCT_PASTEL_COLORS[colorIndex];
       
       return (
         <g key={member} data-member={member}>
@@ -175,7 +196,7 @@ const SpinningWheel = ({ members, teamName }: SpinningWheelProps) => {
       <button
         onClick={spinWheel}
         disabled={isSpinning || memberArray.length < 2}
-        className={`px-6 py-3 rounded-full text-white font-bold text-lg shadow-lg transition-all ${
+        className={`px-6 py-3 rounded-full text-white font-bold text-lg shadow-lg transition-all z-50 ${
           isSpinning || memberArray.length < 2 
             ? 'bg-gray-400 cursor-not-allowed' 
             : 'bg-[#E43D12] hover:bg-[#d13810] hover:shadow-xl'
