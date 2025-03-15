@@ -1,5 +1,6 @@
 import { useRef, useEffect, useState } from 'react';
 import { gsap } from 'gsap';
+import confetti from 'canvas-confetti';
 import useAppDispatch from '../../hooks/useAppDispatch';
 import { incrementModerationCount, TeamMember } from '../../store/teamSlice';
 
@@ -54,6 +55,13 @@ const SpinningWheel = ({ members, teamName }: SpinningWheelProps) => {
         
         // Increment moderation count for winner
         dispatch(incrementModerationCount({ teamName, memberName: winnerName }));
+        
+        // Celebrate with confetti!
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.6 }
+        });
       }
     });
   };
